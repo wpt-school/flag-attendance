@@ -4,6 +4,10 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a73e8">
   <title>ระบบสแกนเช็คชื่อ การเข้าร่วมกิจกรรมหน้าเสาธง</title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -35,11 +39,12 @@
       font-size: 12px;
       color: #5f6368;
       margin-bottom: 14px;
-      padding: 5px 12px;
+      padding: 6px 12px;
       background: #f8f9fa;
       border-radius: 20px;
       display: inline-block;
     }
+    .db-status.err { background: #fce8e6; color: #c5221f; }
     input[type="text"] {
       width: 100%;
       padding: 14px;
@@ -69,16 +74,9 @@
     button:hover { background-color: #1557b0; }
     button:disabled { background-color: #9aa0a6; cursor: not-allowed; }
 
-    .btn-camera {
-      margin-top: 10px;
-      background-color: #3c4043;
-    }
+    .btn-camera { margin-top: 10px; background-color: #3c4043; }
     .btn-camera:hover { background-color: #202124; }
-
-    .btn-sync-web {
-      margin-top: 12px;
-      background-color: #1e8e3e;
-    }
+    .btn-sync-web { margin-top: 12px; background-color: #1e8e3e; }
     .btn-sync-web:hover { background-color: #137333; }
 
     #result-area, #sync-status-area {
@@ -129,9 +127,7 @@
       flex-direction: column;
       overflow: hidden;
     }
-    .qr-fullscreen-modal.open {
-      display: flex;
-    }
+    .qr-fullscreen-modal.open { display: flex; }
     .qr-camera-stage {
       position: relative;
       flex: 1;
@@ -150,32 +146,53 @@
       height: 100% !important;
       object-fit: cover !important;
     }
-    /* แถบเครื่องมือด้านบนของหน้าจอสแกน */
+    /* กรอบเล็งแบบ CSS (ไม่ตัดเฟรมภาพของไลบรารี) */
+    .qr-aim-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .qr-aim-box {
+      width: min(68vw, 250px);
+      height: min(68vw, 250px);
+      border: 3px solid rgba(255, 255, 255, 0.88);
+      border-radius: 18px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .qr-aim-box.scanned {
+      border-color: #34a853;
+      transform: scale(1.04);
+    }
+
     .qr-top-bar {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      z-index: 20;
+      z-index: 25;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 14px 20px 14px;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.78), rgba(0,0,0,0));
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px 20px 14px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.82), rgba(0,0,0,0));
       gap: 8px;
     }
-    .qr-top-title {
+    .qr-status-pill {
       color: #ffffff;
-      font-size: 14px;
+      background: rgba(32, 33, 36, 0.72);
+      padding: 6px 11px;
+      border-radius: 20px;
+      font-size: 12px;
       font-weight: 500;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
       white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.22);
     }
-    .qr-top-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+    .qr-top-actions { display: flex; gap: 8px; align-items: center; }
     .qr-ctrl-btn {
       width: auto;
       padding: 9px 14px;
@@ -190,76 +207,44 @@
       align-items: center;
       gap: 5px;
     }
-    .qr-ctrl-btn:hover { background: rgba(60, 64, 67, 0.9); }
-    .qr-ctrl-btn.torch-on {
-      background: #f9ab00;
-      color: #202124;
-      border-color: #f9ab00;
-    }
-    .qr-ctrl-btn.btn-close-cam {
-      background: rgba(217, 48, 37, 0.92);
-      border-color: rgba(217, 48, 37, 0.95);
-    }
-    .qr-ctrl-btn.btn-close-cam:hover { background: #b31412; }
+    .qr-ctrl-btn.torch-on { background: #f9ab00; color: #202124; border-color: #f9ab00; }
+    .qr-ctrl-btn.btn-close-cam { background: rgba(217, 48, 37, 0.92); border-color: rgba(217, 48, 37, 0.95); }
 
-    /* การ์ดแสดงข้อมูลนักเรียนที่เพิ่งสแกนบนหน้าจอเต็มจอ */
     .qr-scan-toast {
       position: absolute;
-      top: 72px;
+      top: calc(env(safe-area-inset-top, 0px) + 68px);
       left: 14px;
       right: 14px;
-      z-index: 25;
+      z-index: 35;
       padding: 12px 16px;
       border-radius: 12px;
       text-align: center;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
       opacity: 0;
       transform: translateY(-10px);
       pointer-events: none;
       transition: opacity 0.2s ease, transform 0.2s ease;
     }
-    .qr-scan-toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .qr-scan-toast.ok {
-      background: rgba(230, 244, 234, 0.96);
-      border: 2px solid #1e8e3e;
-      color: #137333;
-    }
-    .qr-scan-toast.err {
-      background: rgba(252, 232, 230, 0.96);
-      border: 2px solid #d93025;
-      color: #c5221f;
-    }
+    .qr-scan-toast.show { opacity: 1; transform: translateY(0); }
+    .qr-scan-toast.ok { background: rgba(230, 244, 234, 0.97); border: 2px solid #1e8e3e; color: #137333; }
+    .qr-scan-toast.pending { background: rgba(254, 247, 224, 0.97); border: 2px solid #f29900; color: #b06000; }
+    .qr-scan-toast.err { background: rgba(252, 232, 230, 0.97); border: 2px solid #d93025; color: #c5221f; }
     .qr-toast-status { font-size: 13px; font-weight: 600; }
     .qr-toast-name { font-size: 19px; font-weight: 600; color: #202124; margin: 2px 0; }
     .qr-toast-sub { font-size: 14px; color: #3c4043; }
 
-    /* แถบควบคุมการซูมด้านล่าง */
     .qr-bottom-bar {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 20;
-      padding: 18px 16px 24px 16px;
+      z-index: 25;
+      padding: 18px 16px calc(env(safe-area-inset-bottom, 0px) + 22px) 16px;
       background: linear-gradient(to top, rgba(0,0,0,0.88) 70%, rgba(0,0,0,0));
       color: #ffffff;
     }
-    .zoom-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-    .zoom-presets {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
+    .zoom-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 8px; }
+    .zoom-presets { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
     .zoom-pill {
       width: auto;
       padding: 6px 14px;
@@ -269,26 +254,10 @@
       color: #ffffff;
       border: 1px solid rgba(255,255,255,0.28);
     }
-    .zoom-pill.active {
-      background: #1a73e8;
-      border-color: #8ab4f8;
-    }
-    .zoom-slider-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .zoom-slider-row input[type="range"] {
-      flex: 1;
-      accent-color: #1a73e8;
-      height: 6px;
-    }
-    .zoom-note {
-      font-size: 12px;
-      color: #bdc1c6;
-      text-align: center;
-      margin-top: 6px;
-    }
+    .zoom-pill.active { background: #1a73e8; border-color: #8ab4f8; }
+    .zoom-slider-row { display: flex; align-items: center; gap: 10px; }
+    .zoom-slider-row input[type="range"] { flex: 1; accent-color: #1a73e8; height: 6px; }
+    .zoom-note { font-size: 12px; color: #bdc1c6; text-align: center; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -300,7 +269,6 @@
     <input type="text" id="qrInput" placeholder="สแกนรหัสหรือพิมพ์ที่นี่..." autofocus>
     <button type="button" onclick="handleManualSaveClick()">💾 บันทึกข้อมูล</button>
 
-    <!-- ปุ่มเปิดกล้องเต็มจอ -->
     <button type="button" id="openCameraBtn" class="btn-camera" onclick="openFullscreenScanner()">
       📷 เปิดกล้องสแกน QR Code (เต็มจอ)
     </button>
@@ -336,9 +304,13 @@
     <div class="qr-camera-stage">
       <div id="qr-reader"></div>
 
-      <!-- แถบด้านบน: ชื่อ + ปุ่มไฟฉาย + ปุ่มปิดกล้อง -->
+      <!-- กรอบเล็งกลางจอแบบ CSS -->
+      <div class="qr-aim-overlay">
+        <div id="qrAimBox" class="qr-aim-box"></div>
+      </div>
+
       <div class="qr-top-bar">
-        <div class="qr-top-title">📷 สแกนเช็คชื่อ</div>
+        <div id="camDbBadge" class="qr-status-pill">📷 พร้อมสแกน</div>
         <div class="qr-top-actions">
           <button type="button" id="torchBtn" class="qr-ctrl-btn" onclick="toggleTorch()">
             🔦 ไฟฉาย
@@ -349,14 +321,12 @@
         </div>
       </div>
 
-      <!-- การ์ดแสดงข้อมูลนักเรียนขณะสแกน -->
       <div id="qrScanToast" class="qr-scan-toast">
         <div id="qrToastStatus" class="qr-toast-status"></div>
         <div id="qrToastName" class="qr-toast-name"></div>
         <div id="qrToastSub" class="qr-toast-sub"></div>
       </div>
 
-      <!-- แถบควบคุมการซูมด้านล่าง -->
       <div class="qr-bottom-bar">
         <div id="zoomControlsBox">
           <div class="zoom-header">
@@ -376,7 +346,7 @@
           </div>
         </div>
         <div id="zoomUnsupportedNote" class="zoom-note" style="display: none;">
-          อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการซูมเลนส์กล้องอัตโนมัติ
+          อุปกรณ์นี้ไม่รองรับการซูมเลนส์ผ่านเบราว์เซอร์ (เล็งสแกนได้ตามปกติ)
         </div>
       </div>
     </div>
@@ -398,6 +368,7 @@
 
     let lastScannedCode = "";
     let lastScannedTime = 0;
+    let activeScanStudentName = "";
     let toastTimer = null;
     let sharedAudioCtx = null;
 
@@ -421,6 +392,13 @@
         window.speechSynthesis.getVoices();
       }
     };
+
+    // ปิดกล้องอัตโนมัติเมื่อผู้ใช้สลับออกจากแอปบนหน้าจอโฮม ป้องกันกล้องค้างเมื่อกลับมา
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && isCameraRunning) {
+        closeFullscreenScanner();
+      }
+    });
 
     function setupNavLinks() {
       const navEl = document.getElementById("navLinks");
@@ -467,7 +445,6 @@
           osc.start(now);
           osc.stop(now + 0.25);
         } else {
-          // เสียงติ๊ดสั้นใส 2 จังหวะเมื่อสแกนสำเร็จ
           osc.type = "sine";
           osc.frequency.setValueAtTime(1050, now);
           osc.frequency.setValueAtTime(1400, now + 0.08);
@@ -504,6 +481,13 @@
       } catch (e) {}
     }
 
+    function updateCamDbBadge() {
+      const count = Object.keys(studentMap).length;
+      const badge = document.getElementById("camDbBadge");
+      if (!badge) return;
+      badge.textContent = count > 0 ? `🟢 พร้อมสแกน (${count} คน)` : "⚠️ ยังไม่มีข้อมูลนักเรียน";
+    }
+
     // ==================== โหลดฐานข้อมูลนักเรียน ====================
     async function loadStudentMap() {
       try {
@@ -512,10 +496,19 @@
           studentMap = JSON.parse(cached);
           const count = Object.keys(studentMap).length;
           if (count > 0) {
+            dbStatus.className = "db-status";
             dbStatus.textContent = `🟢 พร้อมใช้งาน (${count} คน - กำลังอัปเดตล่าสุด...)`;
+            updateCamDbBadge();
           }
         }
       } catch (e) {}
+
+      if (!IS_GAS && GAS_API_URL.includes("ใส่_DEPLOYMENT_ID")) {
+        dbStatus.className = "db-status err";
+        dbStatus.textContent = "❌ กรุณาใส่ลิงก์ GAS_API_URL ในไฟล์ index.html ก่อนใช้งาน";
+        updateCamDbBadge();
+        return;
+      }
 
       try {
         let freshData = {};
@@ -532,13 +525,17 @@
 
         studentMap = freshData;
         const count = Object.keys(studentMap).length;
+        dbStatus.className = "db-status";
         dbStatus.textContent = `🟢 พร้อมใช้งาน (ฐานข้อมูล ${count} คน)`;
+        updateCamDbBadge();
         try { localStorage.setItem("wpt_student_map_v1", JSON.stringify(studentMap)); } catch (e) {}
       } catch (err) {
         const count = Object.keys(studentMap).length;
+        dbStatus.className = count > 0 ? "db-status" : "db-status err";
         dbStatus.textContent = count > 0
-          ? `🟡 โหมดออฟไลน์ชั่วคราว (ใช้ข้อมูลแคช ${count} คน)`
-          : "❌ โหลดฐานข้อมูลนักเรียนไม่สำเร็จ กรุณาตรวจสอบ GAS_API_URL";
+          ? `🟡 ใช้ข้อมูลแคช (${count} คน) - อัปเดตล่าสุดไม่ได้`
+          : "❌ โหลดฐานข้อมูลนักเรียนไม่สำเร็จ กรุณาตรวจสอบ GAS_API_URL และการ Deploy";
+        updateCamDbBadge();
       }
     }
 
@@ -569,6 +566,13 @@
       sendData(input.value, true);
     }
 
+    function flashAimBox() {
+      const box = document.getElementById("qrAimBox");
+      if (!box) return;
+      box.classList.add("scanned");
+      setTimeout(() => box.classList.remove("scanned"), 300);
+    }
+
     function showFullscreenToast(statusMsg, nameMsg, subMsg, type) {
       const toast = document.getElementById("qrScanToast");
       document.getElementById("qrToastStatus").textContent = statusMsg;
@@ -579,7 +583,7 @@
       if (toastTimer) clearTimeout(toastTimer);
       toastTimer = setTimeout(() => {
         toast.classList.remove("show");
-      }, 3200);
+      }, 3500);
     }
 
     function sendData(directCode, speakOnSave = false) {
@@ -588,6 +592,19 @@
 
       input.value = "";
       if (!isCameraRunning) input.focus();
+
+      if (Object.keys(studentMap).length === 0) {
+        playBeep("error");
+        const msg = "ฐานข้อมูลนักเรียนยังไม่พร้อม กรุณาปิดกล้องแล้วรีเฟรชหน้าเว็บ";
+        resArea.className = "error";
+        statusText.innerHTML = "❌ โหลดรายชื่อไม่สำเร็จ";
+        nameText.textContent = msg;
+        noText.textContent = "รหัสที่อ่านได้: " + val;
+        if (isCameraRunning) {
+          showFullscreenToast("❌ ยังไม่มีฐานข้อมูลนักเรียน", "รหัสที่อ่านได้: " + val, "ตรวจสอบลิงก์ GAS_API_URL หรืออินเทอร์เน็ต", "err");
+        }
+        return;
+      }
 
       const studentInfo = findStudentByCode(val);
 
@@ -604,52 +621,57 @@
         return;
       }
 
-      // เสียงสัญญาณและแสดงข้อมูลนักเรียนทันที
       playBeep("success");
+      flashAimBox();
 
-      resArea.className = "success";
-      statusText.innerHTML = "✅ บันทึกสำเร็จ (กำลังซิงค์...)";
-      nameText.textContent = studentInfo.name;
+      const currentName = studentInfo.name;
+      activeScanStudentName = currentName;
+      const subText = `ชั้น ${studentInfo.className} | เลขที่ ${studentInfo.no} | รหัส ${studentInfo.studentId}`;
+
+      resArea.className = "pending";
+      statusText.innerHTML = "⏳ อ่านรหัสสำเร็จ (กำลังบันทึกลง Google Sheet...)";
+      nameText.textContent = currentName;
       noText.textContent = "ชั้น: " + studentInfo.className + " เลขที่: " + studentInfo.no;
 
       if (isCameraRunning) {
-        showFullscreenToast(
-          "✅ เช็คชื่อสำเร็จ (กำลังบันทึก...)",
-          studentInfo.name,
-          `ชั้น ${studentInfo.className} | เลขที่ ${studentInfo.no} | รหัส ${studentInfo.studentId}`,
-          "ok"
-        );
+        showFullscreenToast("⏳ อ่านรหัสสำเร็จ (กำลังบันทึกลง Sheet...)", currentName, subText, "pending");
       }
-
-      const currentName = studentInfo.name;
-      setTimeout(() => {
-        if (nameText.textContent === currentName) {
-          resArea.style.display = "none";
-        }
-      }, 3000);
 
       saveScanToBackend(val, studentInfo)
         .then(res => {
           if (res && res.status === "success") {
             if (nameText.textContent === currentName) {
+              resArea.className = "success";
               statusText.innerHTML = "✅ บันทึกสำเร็จและซิงค์แล้ว";
+            }
+            if (isCameraRunning && activeScanStudentName === currentName) {
+              showFullscreenToast("✅ บันทึกลง Google Sheet สำเร็จ!", currentName, subText, "ok");
             }
             if (speakOnSave) {
               speakThai("บันทึกสำเร็จเรียบร้อย");
             }
           } else {
+            const errMsg = (res && res.message) ? res.message : "กรุณาสแกนซ้ำอีกครั้ง";
             if (nameText.textContent === currentName) {
               resArea.className = "error";
-              statusText.innerHTML = "❌ ซิงค์ข้อมูลลงชีตล้มเหลว";
-              nameText.textContent = (res && res.message) ? res.message : "กรุณาสแกนซ้ำอีกครั้ง";
+              statusText.innerHTML = "❌ บันทึกข้อมูลลงชีตล้มเหลว";
+              nameText.textContent = errMsg;
+            }
+            if (isCameraRunning) {
+              playBeep("error");
+              showFullscreenToast("❌ บันทึกลง Sheet ไม่สำเร็จ", currentName, errMsg, "err");
             }
           }
         })
         .catch(() => {
           if (nameText.textContent === currentName) {
             resArea.className = "error";
-            statusText.innerHTML = "❌ การซิงค์ขัดข้อง";
-            nameText.textContent = "กรุณาสแกนรหัสนี้ใหม่อีกครั้งเพื่อความชัวร์";
+            statusText.innerHTML = "❌ การเชื่อมต่อขัดข้อง";
+            nameText.textContent = "กรุณาสแกนรหัสนี้ใหม่อีกครั้ง";
+          }
+          if (isCameraRunning) {
+            playBeep("error");
+            showFullscreenToast("❌ ส่งข้อมูลไป Google Sheet ไม่สำเร็จ", currentName, "ตรวจสอบอินเทอร์เน็ตหรือลิงก์ GAS_API_URL", "err");
           }
         });
     }
@@ -685,19 +707,17 @@
       document.body.style.overflow = "hidden";
 
       resetCameraControlsUI();
+      updateCamDbBadge();
 
       try {
         if (!html5QrCode) {
           html5QrCode = new Html5Qrcode("qr-reader");
         }
 
+        // ไม่ใส่ qrbox เพื่อให้ถอดรหัสเต็มเฟรมภาพ 100% แก้ปัญหาสแกนไม่ติดในโหมดหน้าจอโฮม
         const config = {
           fps: 12,
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const boxSize = Math.max(180, Math.floor(minEdge * 0.65));
-            return { width: boxSize, height: boxSize };
-          }
+          disableFlip: false
         };
 
         const onSuccess = (decodedText) => {
@@ -723,7 +743,7 @@
         await closeFullscreenScanner();
         resArea.className = "error";
         statusText.innerHTML = "❌ เปิดกล้องไม่สำเร็จ";
-        nameText.textContent = "กรุณาอนุญาตสิทธิ์การใช้กล้อง หรือเปิดผ่านลิงก์ GitHub Pages (HTTPS)";
+        nameText.textContent = "ต้องเปิดผ่านลิงก์ GitHub Pages (HTTPS) และอนุญาตสิทธิ์กล้อง";
         noText.textContent = err.message || "";
       }
     }
@@ -750,6 +770,12 @@
       const videoEl = document.querySelector("#qr-reader video");
       if (!videoEl || !videoEl.srcObject) return;
 
+      // บังคับ playsinline เพื่อให้กล้องเล่นต่อเนื่องในโหมด Add to Home Screen (iOS / Android)
+      videoEl.setAttribute("playsinline", "true");
+      videoEl.setAttribute("webkit-playsinline", "true");
+      videoEl.muted = true;
+      videoEl.play().catch(() => {});
+
       const tracks = videoEl.srcObject.getVideoTracks();
       if (!tracks || tracks.length === 0) return;
       activeVideoTrack = tracks[0];
@@ -758,16 +784,9 @@
         ? activeVideoTrack.getCapabilities()
         : {};
 
-      // ตรวจสอบการรองรับไฟฉาย (Torch)
       torchSupported = Boolean(caps.torch);
-      const torchBtn = document.getElementById("torchBtn");
-      if (!torchSupported) {
-        torchBtn.style.opacity = "0.55";
-      } else {
-        torchBtn.style.opacity = "1";
-      }
+      document.getElementById("torchBtn").style.opacity = torchSupported ? "1" : "0.55";
 
-      // ตรวจสอบการรองรับการซูมฮาร์ดแวร์ (Zoom)
       if (caps.zoom && typeof caps.zoom.min === "number" && typeof caps.zoom.max === "number" && caps.zoom.max > caps.zoom.min) {
         zoomSupported = true;
         zoomRange = {
