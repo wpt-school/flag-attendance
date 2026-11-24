@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบสแกนเช็คชื่อ การเข้าร่วมกิจกรรมหน้าเสาธง</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- ไลบรารีสแกน QR Code ผ่านกล้อง -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+      background-color: #f1f3f4;
+      margin: 0;
+      padding: 20px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #ffffff;
+      padding: 26px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    h2 { color: #1a73e8; margin-top: 0; margin-bottom: 10px; font-size: 1.45em; line-height: 1.3; }
+    .db-status {
+      font-size: 12px;
+      color: #5f6368;
+      margin-bottom: 14px;
+      padding: 5px 10px;
+      background: #f8f9fa;
+      border-radius: 20px;
+      display: inline-block;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      font-size: 18px;
+      font-family: 'Prompt', sans-serif;
+      outline: none;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    input:focus { border: 2px solid #1a73e8; }
+    button {
+      width: 100%;
+      background-color: #1a73e8;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 500;
+      font-family: 'Prompt', sans-serif;
+      transition: background-color 0.2s;
+    }
+    button:hover { background-color: #1557b0; }
+    button:disabled { background-color: #9aa0a6; cursor: not-allowed; }
+
+    .btn-camera {
+      margin-top: 10px;
+      background-color: #5f6368;
+    }
+    .btn-camera:hover { background-color: #3c4043; }
+    .btn-camera.active { background-color: #d93025; }
+    .btn-camera.active:hover { background-color: #a50e0e; }
+
+    #qr-reader-wrapper {
+      display: none;
+      margin-top: 12px;
+      border: 2px solid #1a73e8;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+    }
+    #qr-reader { width: 100%; }
+
+    .btn-sync-web {
+      margin-top: 12px;
+      background-color: #1e8e3e;
+    }
+    .btn-sync-web:hover { background-color: #137333; }
+
+    #result-area, #sync-status-area {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 8px;
+      display: none;
+      transition: all 0.3s;
+    }
+    .student-name { font-size: 20px; font-weight: 500; color: #202124; margin: 5px 0; }
+    .student-no { font-size: 15px; color: #5f6368; }
+
+    .success { background-color: #e6f4ea; border: 1px solid #1e8e3e; color: #137333; display: block !important; }
+    .error { background-color: #fce8e6; border: 1px solid #d93025; color: #c5221f; display: block !important; }
+    .pending { background-color: #fef7e0; border: 1px solid #f29900; color: #b06000; display: block !important; }
+
+    .divider { border-top: 1px solid #e0e0e0; margin: 18px 0 12px 0; }
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .nav-pill {
+      font-size: 13px;
+      color: #1a73e8;
+      background: #e8f0fe;
+      padding: 6px 12px;
+      border-radius: 18px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .nav-pill:hover { background: #d2e3fc; }
+    .btn-report { display: block; margin-top: 14px; color: #1a73e8; text-decoration: none; font-size: 14px; }
+    .footer { margin-top: 24px; font-size: 11px; color: #70757a; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>ระบบสแกนเช็คชื่อ<br>กิจกรรมหน้าเสาธง</h2>
+    <div id="dbStatus" class="db-status">⏳ กำลังโหลดรายชื่อนักเรียน...</div>
+
+    <input type="text" id="qrInput" placeholder="สแกนรหัสหรือพิมพ์ที่นี่..." autofocus>
+    <button type="button" onclick="sendData()">บันทึกข้อมูล</button>
+
+    <!-- ปุ่มเปิด/ปิดกล้องสแกน QR Code -->
+    <button type="button" id="toggleCameraBtn" class="btn-camera" onclick="toggleQrScanner()">
+      📷 เปิดกล้องสแกน QR Code
+    </button>
+
+    <div id="qr-reader-wrapper">
+      <div id="qr-reader"></div>
+    </div>
+
+    <div id="result-area">
+      <div id="status-text" style="font-size: 14px; font-weight: bold;"></div>
+      <div id="displayName" class="student-name"></div>
+      <div id="displayNo" class="student-no"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ปุ่มซิงค์เช็คชื่อวันนี้ไปเว็บโรงเรียน -->
+    <button type="button" id="syncWebBtn" class="btn-sync-web" onclick="syncAllToSchoolWeb()">
+      🌐 ซิงค์เช็คชื่อวันนี้ไปเว็บโรงเรียน (ทั้งห้อง)
+    </button>
+
+    <div id="sync-status-area">
+      <div id="sync-status-title" style="font-size: 15px; font-weight: 600;"></div>
+      <div id="sync-status-detail" style="font-size: 13px; margin-top: 4px;"></div>
+    </div>
+
+    <!-- เมนูลัดสลับหน้า -->
+    <div id="navLinks" class="nav-links"></div>
+
+    <a href="https://script.google.com/macros/s/AKfycbyAIL3G-ffpuwjgkIfo74Sz-iPRTIHiIldN9p4bpOV5BaTPYyWur7uyO_5ZLwcgLuIXLQ/exec" target="_blank" class="btn-report">
+      📊 รายงานการเข้าร่วมกิจกรรม
+    </a>
+  </div>
+
+  <div class="footer">จัดทำโดย คุณครูธนโชติ จันทรังษี โรงเรียนวาปีปทุม</div>
+
+  <script>
+    // ================== ตั้งค่า URL Web App ของ Google Apps Script ==================
+    const GAS_API_URL = "https://script.google.com/macros/s/ใส่_DEPLOYMENT_ID_เดิมของคุณครูที่นี่/exec";
+    const IS_GAS = (typeof google !== "undefined" && google.script && google.script.run);
+
+    let studentMap = {};
+    let html5QrCode = null;
+    let isCameraRunning = false;
+    let lastScannedCode = "";
+    let lastScannedTime = 0;
+
+    const input = document.getElementById("qrInput");
+    const dbStatus = document.getElementById("dbStatus");
+    const resArea = document.getElementById("result-area");
+    const statusText = document.getElementById("status-text");
+    const nameText = document.getElementById("displayName");
+    const noText = document.getElementById("displayNo");
+
+    const syncBtn = document.getElementById("syncWebBtn");
+    const syncArea = document.getElementById("sync-status-area");
+    const syncTitle = document.getElementById("sync-status-title");
+    const syncDetail = document.getElementById("sync-status-detail");
+
+    window.onload = function() {
+      setupNavLinks();
+      loadStudentMap();
+    };
+
+    function setupNavLinks() {
+      const navEl = document.getElementById("navLinks");
+      if (!IS_GAS) {
+        navEl.innerHTML = `
+          <a href="manual.html" class="nav-pill">📋 เช็คชื่อ Manual</a>
+          <a href="leave.html" class="nav-pill">📝 แจ้งลาออนไลน์</a>
+        `;
+      } else if (GAS_API_URL.includes("/macros/s/") && !GAS_API_URL.includes("ใส่_DEPLOYMENT_ID")) {
+        navEl.innerHTML = `
+          <a href="${GAS_API_URL}?page=manual" target="_top" class="nav-pill">📋 เช็คชื่อ Manual</a>
+          <a href="${GAS_API_URL}?page=leave" target="_top" class="nav-pill">📝 แจ้งลาออนไลน์</a>
+        `;
+      }
+    }
+
+    // โหลดฐานข้อมูลนักเรียน (แสดงจาก Cache ในเครื่องก่อนทันที แล้วอัปเดตล่าสุดจาก Sheet)
+    async function loadStudentMap() {
+      try {
+        const cached = localStorage.getItem("wpt_student_map_v1");
+        if (cached) {
+          studentMap = JSON.parse(cached);
+          const count = Object.keys(studentMap).length;
+          if (count > 0) {
+            dbStatus.textContent = `🟢 พร้อมใช้งาน (${count} คน - กำลังอัปเดตล่าสุด...)`;
+          }
+        }
+      } catch (e) {}
+
+      try {
+        let freshData = {};
+        if (IS_GAS) {
+          freshData = await new Promise((resolve, reject) => {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getStudentDataMap();
+          });
+        } else {
+          const response = await fetch(`${GAS_API_URL}?action=getStudentMap`, { method: "GET", redirect: "follow" });
+          const json = await response.json();
+          if (json.status !== "success") throw new Error(json.message || "โหลดข้อมูลไม่สำเร็จ");
+          freshData = json.data || {};
+        }
+
+        studentMap = freshData;
+        const count = Object.keys(studentMap).length;
+        dbStatus.textContent = `🟢 พร้อมใช้งาน (ฐานข้อมูล ${count} คน)`;
+        try { localStorage.setItem("wpt_student_map_v1", JSON.stringify(studentMap)); } catch (e) {}
+      } catch (err) {
+        const count = Object.keys(studentMap).length;
+        dbStatus.textContent = count > 0
+          ? `🟡 โหมดออฟไลน์ชั่วคราว (ใช้ข้อมูลแคช ${count} คน)`
+          : "❌ โหลดฐานข้อมูลนักเรียนไม่สำเร็จ กรุณาตรวจสอบ GAS_API_URL";
+      }
+    }
+
+    input.addEventListener("keyup", e => { if (e.key === "Enter") sendData(); });
+
+    // คืนโฟกัสเฉพาะเมื่อไม่ได้เปิดกล้องและไม่ได้กดปุ่ม/ลิงก์ (ป้องกันคีย์บอร์ดมือถือเด้งบังกล้อง)
+    document.addEventListener("click", (e) => {
+      if (!isCameraRunning && !e.target.closest("button, a, #qr-reader-wrapper")) {
+        input.focus();
+      }
+    });
+
+    function playBeep() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1050, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } catch (e) {}
+    }
+
+    // ค้นหานักเรียนจากรหัส QR (รองรับทั้งรหัสคอลัมน์ F และเลขประจำตัวนักเรียน)
+    function findStudentByCode(code) {
+      if (studentMap[code]) return studentMap[code];
+      const keys = Object.keys(studentMap);
+      for (let i = 0; i < keys.length; i++) {
+        if (String(studentMap[keys[i]].studentId).trim() === code) {
+          return studentMap[keys[i]];
+        }
+      }
+      return null;
+    }
+
+    function sendData(directCode) {
+      const val = (typeof directCode === "string" ? directCode : input.value).trim();
+      if (!val) return;
+
+      input.value = "";
+      if (!isCameraRunning) input.focus();
+
+      const studentInfo = findStudentByCode(val);
+
+      if (!studentInfo) {
+        resArea.className = "error";
+        statusText.innerHTML = "❌ ไม่สำเร็จ";
+        nameText.textContent = "ไม่พบข้อมูลรหัส: " + val;
+        noText.textContent = "";
+        return;
+      }
+
+      // แสดงผลสำเร็จบนหน้าจอทันที (Optimistic UI)
+      resArea.className = "success";
+      statusText.innerHTML = "✅ บันทึกสำเร็จ (กำลังซิงค์...)";
+      nameText.textContent = studentInfo.name;
+      noText.textContent = "ชั้น: " + studentInfo.className + " เลขที่: " + studentInfo.no;
+
+      const currentName = studentInfo.name;
+      setTimeout(() => {
+        if (nameText.textContent === currentName) {
+          resArea.style.display = "none";
+        }
+      }, 3000);
+
+      // ส่งข้อมูลบันทึกลง Google Sheet เป็นเบื้องหลัง
+      saveScanToBackend(val, studentInfo)
+        .then(res => {
+          if (nameText.textContent !== currentName) return;
+          if (res && res.status === "success") {
+            statusText.innerHTML = "✅ บันทึกสำเร็จและซิงค์แล้ว";
+          } else {
+            resArea.className = "error";
+            statusText.innerHTML = "❌ ซิงค์ข้อมูลลงชีตล้มเหลว";
+            nameText.textContent = (res && res.message) ? res.message : "กรุณาสแกนซ้ำอีกครั้ง";
+          }
+        })
+        .catch(() => {
+          if (nameText.textContent !== currentName) return;
+          resArea.className = "error";
+          statusText.innerHTML = "❌ การซิงค์ขัดข้อง";
+          nameText.textContent = "กรุณาสแกนรหัสนี้ใหม่อีกครั้งเพื่อความชัวร์";
+        });
+    }
+
+    async function saveScanToBackend(qrData, studentInfo) {
+      if (IS_GAS) {
+        return new Promise((resolve, reject) => {
+          google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).saveData(qrData, studentInfo);
+        });
+      }
+      const res = await fetch(GAS_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "saveScan", qrData, studentInfo }),
+        redirect: "follow"
+      });
+      return res.json();
+    }
+
+    // ==================== ระบบกล้องสแกน QR Code ====================
+    async function toggleQrScanner() {
+      if (isCameraRunning) {
+        await stopQrScanner();
+      } else {
+        await startQrScanner();
+      }
+    }
+
+    async function startQrScanner() {
+      if (typeof Html5Qrcode === "undefined") {
+        alert("ไม่สามารถโหลดไลบรารีสแกน QR Code ได้ กรุณาตรวจสอบอินเทอร์เน็ต");
+        return;
+      }
+
+      const btn = document.getElementById("toggleCameraBtn");
+      const wrapper = document.getElementById("qr-reader-wrapper");
+      btn.disabled = true;
+      btn.textContent = "⏳ กำลังเปิดกล้อง...";
+      wrapper.style.display = "block";
+
+      try {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("qr-reader");
+        }
+
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+        const onSuccess = (decodedText) => {
+          const code = decodedText.trim();
+          const now = Date.now();
+          // หน่วงเวลา 3 วินาทีสำหรับรหัสเดิม ป้องกันการสแกนซ้ำรัวๆ
+          if (code === lastScannedCode && (now - lastScannedTime) < 3000) return;
+          lastScannedCode = code;
+          lastScannedTime = now;
+          playBeep();
+          sendData(code);
+        };
+
+        try {
+          // เริ่มต้นด้วยกล้องหลัง (เหมาะกับมือถือ)
+          await html5QrCode.start({ facingMode: "environment" }, config, onSuccess, () => {});
+        } catch (envErr) {
+          // หากไม่มีกล้องหลัง (เช่น โน้ตบุ๊ก) ให้สลับใช้กล้องตัวแรกที่พบ
+          const cameras = await Html5Qrcode.getCameras();
+          if (!cameras || cameras.length === 0) throw new Error("ไม่พบกล้องในอุปกรณ์นี้");
+          await html5QrCode.start(cameras[0].id, config, onSuccess, () => {});
+        }
+
+        isCameraRunning = true;
+        btn.disabled = false;
+        btn.classList.add("active");
+        btn.textContent = "⏹️ ปิดกล้องสแกน QR Code";
+      } catch (err) {
+        wrapper.style.display = "none";
+        btn.disabled = false;
+        btn.classList.remove("active");
+        btn.textContent = "📷 เปิดกล้องสแกน QR Code";
+        resArea.className = "error";
+        statusText.innerHTML = "❌ เปิดกล้องไม่สำเร็จ";
+        nameText.textContent = "กรุณาอนุญาตสิทธิ์การใช้กล้อง หรือเปิดผ่านลิงก์ GitHub Pages (HTTPS)";
+        noText.textContent = err.message || "";
+      }
+    }
+
+    async function stopQrScanner() {
+      const btn = document.getElementById("toggleCameraBtn");
+      const wrapper = document.getElementById("qr-reader-wrapper");
+      if (html5QrCode && isCameraRunning) {
+        try {
+          await html5QrCode.stop();
+          await html5QrCode.clear();
+        } catch (e) {}
+      }
+      isCameraRunning = false;
+      wrapper.style.display = "none";
+      btn.classList.remove("active");
+      btn.textContent = "📷 เปิดกล้องสแกน QR Code";
+    }
+
+    // ==================== ซิงค์ข้อมูลไปเว็บโรงเรียนทั้งห้อง ====================
+    async function syncAllToSchoolWeb() {
+      syncBtn.disabled = true;
+      syncBtn.textContent = "⏳ กำลังซิงค์ข้อมูลไปเว็บโรงเรียน...";
+      syncArea.className = "pending";
+      syncTitle.textContent = "⏳ กำลังเช็คชื่อเปิดวันและซิงค์ข้อมูลทั้งห้อง...";
+      syncDetail.textContent = "กรุณารอสักครู่ (ใช้เวลาประมาณ 5-15 วินาที)";
+
+      try {
+        let res;
+        if (IS_GAS) {
+          res = await new Promise((resolve, reject) => {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).syncTodayFromWebApp();
+          });
+        } else {
+          const response = await fetch(GAS_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "syncToday" }),
+            redirect: "follow"
+          });
+          res = await response.json();
+        }
+
+        if (res && res.status === "success") {
+          syncArea.className = "success";
+          syncTitle.textContent = "✅ ซิงค์เช็คชื่อวันนี้ไปเว็บโรงเรียน (ทั้งห้อง) เรียบร้อยแล้ว";
+          syncDetail.textContent = res.detail || "";
+        } else {
+          syncArea.className = "error";
+          syncTitle.textContent = "❌ ซิงค์ข้อมูลไม่สำเร็จ";
+          syncDetail.textContent = (res && res.message) ? res.message : "กรุณาลองใหม่อีกครั้ง";
+        }
+      } catch (err) {
+        syncArea.className = "error";
+        syncTitle.textContent = "❌ การเชื่อมต่อขัดข้อง";
+        syncDetail.textContent = "ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ กรุณากดซิงค์ใหม่อีกครั้ง";
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = "🌐 ซิงค์เช็คชื่อวันนี้ไปเว็บโรงเรียน (ทั้งห้อง)";
+      }
+    }
+  </script>
+</body>
+</html>
