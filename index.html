@@ -4,6 +4,8 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1a73e8">
   <title>ระบบสแกนเช็คชื่อ การเข้าร่วมกิจกรรมหน้าเสาธง</title>
@@ -714,13 +716,8 @@
 
         // ไม่ใส่ qrbox เพื่อให้ถอดรหัสเต็มเฟรมภาพ 100% แก้ปัญหาสแกนไม่ติดในโหมดหน้าจอโฮม
         const config = {
-          fps: 10,
-          disableFlip: false,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
+          fps: 12,
+          disableFlip: false
         };
 
         const onSuccess = (decodedText) => {
@@ -733,12 +730,10 @@
         };
 
         try {
-          await html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            onSuccess,
-            () => {}
-        );
+          await html5QrCode.start({ facingMode: "environment" }, config, onSuccess, () => {});
+        } catch (envErr) {
+          const cameras = await Html5Qrcode.getCameras();
+          if (!cameras || cameras.length === 0) throw new Error("ไม่พบกล้องในอุปกรณ์นี้");
           await html5QrCode.start(cameras[0].id, config, onSuccess, () => {});
         }
 
