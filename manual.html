@@ -4,6 +4,8 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1a73e8">
   <title>ระบบเช็คชื่อด้วยตนเอง (Manual) - กิจกรรมหน้าเสาธง</title>
@@ -692,22 +694,9 @@
 
         // ไม่ใส่ qrbox เพื่อให้ถอดรหัสเต็มเฟรมภาพ 100% แก้ปัญหาสแกนไม่ติดในโหมดหน้าจอโฮม
         const config = {
-          fps: 10,
-          disableFlip: false,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
+          fps: 12,
+          disableFlip: false
         };
-
-// เรียกเปิดกล้องหลังโดยตรง (ส่ง config ที่มี videoConstraints แทนการเปิดแบบไม่จำกัดความละเอียด)
-await html5QrCode.start(
-  { facingMode: "environment" },
-  config,
-  onSuccess,
-  () => {}
-);
 
         const onSuccess = (decodedText) => {
           const code = decodedText.trim();
