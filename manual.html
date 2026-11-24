@@ -3,10 +3,9 @@
 <head>
   <base target="_top">
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ระบบเช็คชื่อด้วยตนเอง (Manual) - กิจกรรมหน้าเสาธง</title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <!-- ไลบรารีสแกน QR Code ผ่านกล้อง -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     body {
@@ -47,7 +46,7 @@
     }
     .sub-note { font-size: 12px; color: #5f6368; margin-top: 6px; }
 
-    /* โซนสแกน QR Code ในหน้า Manual */
+    /* โซนเปิดกล้องและสแกนด้วยเครื่องยิงบาร์โค้ด */
     .qr-section {
       background-color: #f8f9fa;
       border: 1px solid #dadce0;
@@ -55,35 +54,20 @@
       padding: 12px;
       margin-bottom: 15px;
     }
-    .qr-toggle-btn {
+    .qr-open-btn {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       border: none;
       border-radius: 8px;
       background-color: #1a73e8;
       color: #ffffff;
       font-family: 'Prompt', sans-serif;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 500;
       cursor: pointer;
     }
-    .qr-toggle-btn:hover { background-color: #1557b0; }
-    .qr-toggle-btn.active { background-color: #d93025; }
-    .qr-toggle-btn.active:hover { background-color: #a50e0e; }
+    .qr-open-btn:hover { background-color: #1557b0; }
 
-    #manual-qr-panel {
-      display: none;
-      margin-top: 10px;
-    }
-    #manual-qr-reader {
-      width: 100%;
-      max-width: 340px;
-      margin: 0 auto 10px auto;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 2px solid #1a73e8;
-      background: #000;
-    }
     .qr-input-row {
       display: flex;
       gap: 6px;
@@ -173,7 +157,6 @@
       border: 1px solid #e0e0e0;
       border-radius: 8px;
       background-color: #ffffff;
-      transition: background-color 0.4s, border-color 0.4s;
     }
     .student-row.locked-row { background-color: #f8f9fa; border-color: #dadce0; }
     .student-row.just-scanned { background-color: #e6f4ea; border-color: #1e8e3e; }
@@ -250,6 +233,183 @@
       padding: 6px 12px; border-radius: 18px; text-decoration: none; font-weight: 500;
     }
     .footer { margin-top: 20px; font-size: 11px; color: #70757a; text-align: center; }
+
+    /* ==================== หน้าต่างสแกน QR Code แบบเต็มจอ ==================== */
+    .qr-fullscreen-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      background-color: #000000;
+      z-index: 9999;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .qr-fullscreen-modal.open {
+      display: flex;
+    }
+    .qr-camera-stage {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+    #manual-qr-reader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+    #manual-qr-reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+    .qr-top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 14px 20px 14px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
+      gap: 8px;
+    }
+    .qr-counter-badge {
+      background: rgba(30, 142, 62, 0.9);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .qr-top-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .qr-ctrl-btn {
+      padding: 9px 14px;
+      border-radius: 24px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(32, 33, 36, 0.78);
+      color: #ffffff;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+    }
+    .qr-ctrl-btn.torch-on {
+      background: #f9ab00;
+      color: #202124;
+      border-color: #f9ab00;
+    }
+    .qr-ctrl-btn.btn-close-cam {
+      background: rgba(217, 48, 37, 0.92);
+      border-color: rgba(217, 48, 37, 0.95);
+    }
+
+    /* การ์ดแสดงข้อมูลนักเรียนบนหน้าจอสแกนเต็มจอ */
+    .qr-scan-toast {
+      position: absolute;
+      top: 72px;
+      left: 14px;
+      right: 14px;
+      z-index: 25;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(-10px);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .qr-scan-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .qr-scan-toast.ok {
+      background: rgba(230, 244, 234, 0.96);
+      border: 2px solid #1e8e3e;
+      color: #137333;
+    }
+    .qr-scan-toast.warn {
+      background: rgba(254, 247, 224, 0.96);
+      border: 2px solid #f29900;
+      color: #b06000;
+    }
+    .qr-scan-toast.err {
+      background: rgba(252, 232, 230, 0.96);
+      border: 2px solid #d93025;
+      color: #c5221f;
+    }
+    .qr-toast-status { font-size: 13px; font-weight: 600; }
+    .qr-toast-name { font-size: 19px; font-weight: 600; color: #202124; margin: 2px 0; }
+    .qr-toast-sub { font-size: 14px; color: #3c4043; }
+
+    /* แถบควบคุมการซูมด้านล่าง */
+    .qr-bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      padding: 18px 16px 24px 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.88) 70%, rgba(0,0,0,0));
+      color: #ffffff;
+    }
+    .zoom-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .zoom-presets {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .zoom-pill {
+      padding: 6px 14px;
+      border-radius: 18px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 13px;
+      background: rgba(255,255,255,0.18);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.28);
+      cursor: pointer;
+    }
+    .zoom-pill.active {
+      background: #1a73e8;
+      border-color: #8ab4f8;
+    }
+    .zoom-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .zoom-slider-row input[type="range"] {
+      flex: 1;
+      accent-color: #1a73e8;
+      height: 6px;
+    }
+    .zoom-note {
+      font-size: 12px;
+      color: #bdc1c6;
+      text-align: center;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
@@ -262,17 +422,14 @@
     </div>
 
     <div id="controlPanel" style="display: none;">
-      <!-- โซนสแกน QR Code เช็คชื่อ "มา" อัตโนมัติ -->
+      <!-- โซนเปิดกล้องเต็มจอ & ช่องยิงสแกน USB -->
       <div class="qr-section">
-        <button type="button" id="manualQrBtn" class="qr-toggle-btn" onclick="toggleManualScanner()">
-          📷 เปิดกล้องสแกน QR Code เช็คชื่อ
+        <button type="button" class="qr-open-btn" onclick="openManualFullscreenScanner()">
+          📷 เปิดกล้องสแกน QR Code เช็คชื่อ (เต็มจอ)
         </button>
-        <div id="manual-qr-panel">
-          <div id="manual-qr-reader"></div>
-          <div class="qr-input-row">
-            <input type="text" id="manualQrInput" placeholder="หรือยิงเครื่องสแกน / พิมพ์รหัสนักเรียน...">
-            <button type="button" onclick="handleManualInputScan()">เช็คมา</button>
-          </div>
+        <div class="qr-input-row">
+          <input type="text" id="manualQrInput" placeholder="หรือยิงเครื่องสแกน USB / พิมพ์รหัสนักเรียน...">
+          <button type="button" onclick="handleManualInputScan()">เช็คมา</button>
         </div>
         <div id="scanFeedback" class="scan-feedback"></div>
       </div>
@@ -314,6 +471,57 @@
 
   <div class="footer">จัดทำโดย คุณครูธนโชติ จันทรังษี โรงเรียนวาปีปทุม</div>
 
+  <!-- ==================== หน้าต่างกล้องสแกน QR Code เต็มจอ ==================== -->
+  <div id="manualQrModal" class="qr-fullscreen-modal" aria-hidden="true">
+    <div class="qr-camera-stage">
+      <div id="manual-qr-reader"></div>
+
+      <!-- แถบด้านบน: ยอดเช็คชื่อ + ปุ่มไฟฉาย + ปุ่มปิดกล้อง -->
+      <div class="qr-top-bar">
+        <div id="camPresentBadge" class="qr-counter-badge">มา: 0 / 0</div>
+        <div class="qr-top-actions">
+          <button type="button" id="manualTorchBtn" class="qr-ctrl-btn" onclick="toggleManualTorch()">
+            🔦 ไฟฉาย
+          </button>
+          <button type="button" class="qr-ctrl-btn btn-close-cam" onclick="closeManualFullscreenScanner()">
+            ✕ ปิดกล้อง
+          </button>
+        </div>
+      </div>
+
+      <!-- การ์ดแสดงข้อมูลนักเรียนที่เพิ่งสแกน -->
+      <div id="manualScanToast" class="qr-scan-toast">
+        <div id="manualToastStatus" class="qr-toast-status"></div>
+        <div id="manualToastName" class="qr-toast-name"></div>
+        <div id="manualToastSub" class="qr-toast-sub"></div>
+      </div>
+
+      <!-- แถบควบคุมการซูมด้านล่าง -->
+      <div class="qr-bottom-bar">
+        <div id="manualZoomControls">
+          <div class="zoom-header">
+            <span>🔍 ซูมกล้อง</span>
+            <span id="manualZoomLabel">1.0x</span>
+          </div>
+          <div class="zoom-presets" id="manualZoomPresets">
+            <button type="button" class="zoom-pill active" onclick="setManualZoom(1)">1x</button>
+            <button type="button" class="zoom-pill" onclick="setManualZoom(1.5)">1.5x</button>
+            <button type="button" class="zoom-pill" onclick="setManualZoom(2)">2x</button>
+            <button type="button" class="zoom-pill" onclick="setManualZoom(3)">3x</button>
+          </div>
+          <div class="zoom-slider-row">
+            <span>−</span>
+            <input type="range" id="manualZoomSlider" min="1" max="4" step="0.1" value="1" oninput="setManualZoom(parseFloat(this.value))">
+            <span>+</span>
+          </div>
+        </div>
+        <div id="manualZoomUnsupported" class="zoom-note" style="display: none;">
+          อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการซูมเลนส์กล้องอัตโนมัติ
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ================== ตั้งค่า URL Web App ของ Google Apps Script ==================
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycby_viWHAUinPqVIxt0zSA7vGy0Bvq0u-4aNZ6AgOX05kWGlAszQ4Yu3ItcIlixij_kryQ/exec";
@@ -321,10 +529,20 @@
 
     let studentsData = [];
     let qrToStudentId = {};
+    let currentRoomName = "";
+
     let manualQrScanner = null;
     let isManualCamRunning = false;
+    let activeTrack = null;
+    let isTorchOn = false;
+    let torchSupported = false;
+    let zoomSupported = false;
+    let zoomRange = { min: 1, max: 1, step: 0.1 };
+
     let lastCode = "";
     let lastCodeTime = 0;
+    let toastTimer = null;
+    let sharedAudioCtx = null;
 
     window.onload = function() {
       setupNavLinks();
@@ -332,6 +550,10 @@
       document.getElementById("manualQrInput").addEventListener("keyup", function(e) {
         if (e.key === "Enter") handleManualInputScan();
       });
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        window.speechSynthesis.getVoices();
+      }
     };
 
     function setupNavLinks() {
@@ -342,6 +564,78 @@
           <a href="leave.html" class="nav-pill">📝 แจ้งลาออนไลน์</a>
         `;
       }
+    }
+
+    // ==================== ระบบเสียงสัญญาณและเสียงพูดภาษาไทย ====================
+    function ensureAudioUnlocked() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!sharedAudioCtx && AudioCtx) {
+          sharedAudioCtx = new AudioCtx();
+        }
+        if (sharedAudioCtx && sharedAudioCtx.state === "suspended") {
+          sharedAudioCtx.resume();
+        }
+      } catch (e) {}
+    }
+
+    function playBeep(type) {
+      try {
+        ensureAudioUnlocked();
+        if (!sharedAudioCtx) return;
+        const now = sharedAudioCtx.currentTime;
+        const osc = sharedAudioCtx.createOscillator();
+        const gain = sharedAudioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(sharedAudioCtx.destination);
+
+        if (type === "error") {
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(280, now);
+          gain.gain.setValueAtTime(0.18, now);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === "warn") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(660, now);
+          gain.gain.setValueAtTime(0.18, now);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } else {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(1050, now);
+          osc.frequency.setValueAtTime(1400, now + 0.08);
+          gain.gain.setValueAtTime(0.2, now);
+          osc.start(now);
+          osc.stop(now + 0.16);
+        }
+      } catch (e) {}
+    }
+
+    function unlockSpeech() {
+      try {
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+          const silent = new SpeechSynthesisUtterance("");
+          silent.volume = 0;
+          window.speechSynthesis.speak(silent);
+        }
+      } catch (e) {}
+    }
+
+    function speakThai(text) {
+      try {
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = "th-TH";
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const thaiVoice = voices.find(v => v.lang && v.lang.toLowerCase().includes("th"));
+        if (thaiVoice) utter.voice = thaiVoice;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
     }
 
     function showAlert(msg, type) {
@@ -356,20 +650,17 @@
       fb.className = "scan-feedback " + type;
     }
 
-    function playBeep() {
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(1050, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.12);
-      } catch (e) {}
+    function showFullscreenToast(statusMsg, nameMsg, subMsg, type) {
+      const toast = document.getElementById("manualScanToast");
+      document.getElementById("manualToastStatus").textContent = statusMsg;
+      document.getElementById("manualToastName").textContent = nameMsg;
+      document.getElementById("manualToastSub").textContent = subMsg;
+      toast.className = "qr-scan-toast show " + type;
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3200);
     }
 
     async function loadTodayData() {
@@ -385,7 +676,8 @@
         }
 
         if (res.todayDisplay) {
-          const roomText = res.roomName ? `ห้อง ${res.roomName} | ` : "";
+          currentRoomName = res.roomName || "";
+          const roomText = currentRoomName ? `ห้อง ${currentRoomName} | ` : "";
           document.getElementById("dateDisplay").textContent = `📅 ${roomText}${res.todayDisplay}`;
         }
 
@@ -402,33 +694,38 @@
       }
     }
 
-    // ==================== ระบบสแกน QR Code ในหน้า Manual ====================
-    async function toggleManualScanner() {
-      if (isManualCamRunning) {
-        await stopManualScanner();
-      } else {
-        await startManualScanner();
-      }
-    }
+    // ==================== หน้าต่างกล้องสแกน QR Code เต็มจอ ====================
+    async function openManualFullscreenScanner() {
+      ensureAudioUnlocked();
+      unlockSpeech();
 
-    async function startManualScanner() {
       if (typeof Html5Qrcode === "undefined") {
         showScanFeedback("❌ ไม่สามารถโหลดไลบรารีสแกน QR Code ได้", "err");
         return;
       }
 
-      const btn = document.getElementById("manualQrBtn");
-      const panel = document.getElementById("manual-qr-panel");
-      btn.disabled = true;
-      btn.textContent = "⏳ กำลังเปิดกล้อง...";
-      panel.style.display = "block";
+      const modal = document.getElementById("manualQrModal");
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+
+      resetManualCameraUI();
+      updateSummaryCounts();
 
       try {
         if (!manualQrScanner) {
           manualQrScanner = new Html5Qrcode("manual-qr-reader");
         }
 
-        const config = { fps: 10, qrbox: { width: 210, height: 210 } };
+        const config = {
+          fps: 12,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const boxSize = Math.max(180, Math.floor(minEdge * 0.65));
+            return { width: boxSize, height: boxSize };
+          }
+        };
+
         const onSuccess = (decodedText) => {
           const code = decodedText.trim();
           const now = Date.now();
@@ -447,20 +744,108 @@
         }
 
         isManualCamRunning = true;
-        btn.disabled = false;
-        btn.classList.add("active");
-        btn.textContent = "⏹️ ปิดกล้องสแกน QR Code";
+        setTimeout(() => initManualCameraCapabilities(), 350);
       } catch (err) {
-        btn.disabled = false;
-        btn.classList.remove("active");
-        btn.textContent = "📷 เปิดกล้องสแกน QR Code เช็คชื่อ";
-        showScanFeedback("❌ เปิดกล้องไม่สำเร็จ (ยังพิมพ์รหัสหรือใช้เครื่องสแกน USB ในช่องด้านบนได้): " + (err.message || ""), "err");
+        await closeManualFullscreenScanner();
+        showScanFeedback("❌ เปิดกล้องไม่สำเร็จ: " + (err.message || "กรุณาอนุญาตสิทธิ์การใช้กล้อง"), "err");
       }
     }
 
-    async function stopManualScanner() {
-      const btn = document.getElementById("manualQrBtn");
-      const panel = document.getElementById("manual-qr-panel");
+    function resetManualCameraUI() {
+      activeTrack = null;
+      isTorchOn = false;
+      torchSupported = false;
+      zoomSupported = false;
+
+      const torchBtn = document.getElementById("manualTorchBtn");
+      torchBtn.classList.remove("torch-on");
+      torchBtn.textContent = "🔦 ไฟฉาย";
+
+      document.getElementById("manualZoomControls").style.display = "block";
+      document.getElementById("manualZoomUnsupported").style.display = "none";
+      document.getElementById("manualZoomLabel").textContent = "1.0x";
+      document.getElementById("manualZoomSlider").value = 1;
+      document.getElementById("manualScanToast").classList.remove("show");
+    }
+
+    function initManualCameraCapabilities() {
+      const videoEl = document.querySelector("#manual-qr-reader video");
+      if (!videoEl || !videoEl.srcObject) return;
+
+      const tracks = videoEl.srcObject.getVideoTracks();
+      if (!tracks || tracks.length === 0) return;
+      activeTrack = tracks[0];
+
+      const caps = (typeof activeTrack.getCapabilities === "function")
+        ? activeTrack.getCapabilities()
+        : {};
+
+      // ตรวจสอบไฟฉาย (Torch)
+      torchSupported = Boolean(caps.torch);
+      document.getElementById("manualTorchBtn").style.opacity = torchSupported ? "1" : "0.55";
+
+      // ตรวจสอบการซูมเลนส์กล้อง (Zoom)
+      if (caps.zoom && typeof caps.zoom.min === "number" && typeof caps.zoom.max === "number" && caps.zoom.max > caps.zoom.min) {
+        zoomSupported = true;
+        zoomRange = {
+          min: caps.zoom.min,
+          max: Math.min(caps.zoom.max, 6),
+          step: caps.zoom.step || 0.1
+        };
+
+        const slider = document.getElementById("manualZoomSlider");
+        slider.min = zoomRange.min;
+        slider.max = zoomRange.max;
+        slider.step = zoomRange.step;
+        slider.value = zoomRange.min;
+        document.getElementById("manualZoomLabel").textContent = zoomRange.min.toFixed(1) + "x";
+        document.getElementById("manualZoomControls").style.display = "block";
+        document.getElementById("manualZoomUnsupported").style.display = "none";
+      } else {
+        zoomSupported = false;
+        document.getElementById("manualZoomControls").style.display = "none";
+        document.getElementById("manualZoomUnsupported").style.display = "block";
+      }
+    }
+
+    async function setManualZoom(level) {
+      if (!zoomSupported || !activeTrack) return;
+      const clamped = Math.max(zoomRange.min, Math.min(zoomRange.max, level));
+      try {
+        await activeTrack.applyConstraints({ advanced: [{ zoom: clamped }] });
+        document.getElementById("manualZoomSlider").value = clamped;
+        document.getElementById("manualZoomLabel").textContent = clamped.toFixed(1) + "x";
+
+        document.querySelectorAll("#manualZoomPresets .zoom-pill").forEach(btn => {
+          const val = parseFloat(btn.textContent);
+          btn.classList.toggle("active", Math.abs(val - clamped) < 0.2);
+        });
+      } catch (e) {}
+    }
+
+    async function toggleManualTorch() {
+      if (!activeTrack || !torchSupported) {
+        showFullscreenToast("⚠️ ไม่รองรับไฟฉาย", "อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการเปิดไฟฉาย", "แนะนำใช้งานบน Chrome (Android)", "err");
+        return;
+      }
+      try {
+        const nextState = !isTorchOn;
+        await activeTrack.applyConstraints({ advanced: [{ torch: nextState }] });
+        isTorchOn = nextState;
+        const torchBtn = document.getElementById("manualTorchBtn");
+        torchBtn.classList.toggle("torch-on", isTorchOn);
+        torchBtn.textContent = isTorchOn ? "🔦 ปิดไฟฉาย" : "🔦 ไฟฉาย";
+      } catch (e) {
+        showFullscreenToast("⚠️ เปิดไฟฉายไม่สำเร็จ", "กล้องปัจจุบันไม่รองรับคำสั่งไฟฉาย", "", "err");
+      }
+    }
+
+    async function closeManualFullscreenScanner() {
+      if (activeTrack && isTorchOn) {
+        try {
+          await activeTrack.applyConstraints({ advanced: [{ torch: false }] });
+        } catch (e) {}
+      }
       if (manualQrScanner && isManualCamRunning) {
         try {
           await manualQrScanner.stop();
@@ -468,12 +853,17 @@
         } catch (e) {}
       }
       isManualCamRunning = false;
-      panel.style.display = "none";
-      btn.classList.remove("active");
-      btn.textContent = "📷 เปิดกล้องสแกน QR Code เช็คชื่อ";
+      activeTrack = null;
+      isTorchOn = false;
+
+      const modal = document.getElementById("manualQrModal");
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
     }
 
     function handleManualInputScan() {
+      ensureAudioUnlocked();
       const inputEl = document.getElementById("manualQrInput");
       const code = inputEl.value.trim();
       if (!code) return;
@@ -488,35 +878,57 @@
       );
 
       if (idx === -1) {
+        playBeep("error");
         showScanFeedback(`❌ ไม่พบนักเรียนรหัส "${rawCode}" ในรายชื่อห้องนี้`, "err");
+        if (isManualCamRunning) {
+          showFullscreenToast("❌ ไม่พบนักเรียนในห้องนี้", "รหัส: " + rawCode, "กรุณาตรวจสอบ QR Code อีกครั้ง", "err");
+        }
         return;
       }
 
       const stu = studentsData[idx];
-      playBeep();
+      const roomSuffix = currentRoomName ? `ชั้น ${currentRoomName} | ` : "";
 
       if (stu.isLocked) {
+        playBeep("warn");
         showScanFeedback(`🔒 เลขที่ ${stu.no} ${stu.name} มีสถานะ "${stu.status}" อยู่แล้ว (ถูกล็อก)`, "warn");
-        renderStudentList(stu.row);
+        if (isManualCamRunning) {
+          showFullscreenToast(
+            `🔒 ถูกล็อกสถานะ: ${stu.status}`,
+            stu.name,
+            `${roomSuffix}เลขที่ ${stu.no} | รหัส ${stu.studentId}`,
+            "warn"
+          );
+        }
         return;
       }
 
+      playBeep("success");
       stu.status = "มา";
+      // อัปเดตตารางเบื้องหลังโดยไม่สั่งเลื่อนหน้าจอ (ไม่ขัดจังหวะการสแกน)
       renderStudentList(stu.row);
-      showScanFeedback(`✅ เช็คชื่อ "มา" ให้ เลขที่ ${stu.no} ${stu.name} (อย่าลืมกดปุ่มบันทึกด้านล่างเมื่อเช็คครบ)`, "ok");
+
+      showScanFeedback(`✅ เช็คชื่อ "มา" ให้ เลขที่ ${stu.no} ${stu.name} (กดปุ่มบันทึกด้านล่างเมื่อเช็คครบ)`, "ok");
+      if (isManualCamRunning) {
+        showFullscreenToast(
+          `✅ เช็คชื่อ "มา" เรียบร้อย`,
+          stu.name,
+          `${roomSuffix}เลขที่ ${stu.no} | รหัส ${stu.studentId}`,
+          "ok"
+        );
+      }
     }
 
     // ==================== แสดงผลและจัดการรายชื่อ ====================
     function renderStudentList(highlightRow) {
       const listEl = document.getElementById("studentList");
+      const prevScrollTop = listEl.scrollTop;
       listEl.innerHTML = "";
-      let targetRowEl = null;
 
       studentsData.forEach((stu, idx) => {
         const rowDiv = document.createElement("div");
         const isHighlighted = (highlightRow && stu.row === highlightRow);
         rowDiv.className = "student-row" + (stu.isLocked ? " locked-row" : "") + (isHighlighted ? " just-scanned" : "");
-        if (isHighlighted) targetRowEl = rowDiv;
 
         const infoDiv = document.createElement("div");
         infoDiv.className = "stu-info";
@@ -552,11 +964,8 @@
         listEl.appendChild(rowDiv);
       });
 
+      listEl.scrollTop = prevScrollTop;
       updateSummaryCounts();
-
-      if (targetRowEl) {
-        targetRowEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
     }
 
     function setStudentStatus(index, newStatus) {
@@ -582,9 +991,17 @@
       document.getElementById("sumPresent").textContent = present;
       document.getElementById("sumAbsent").textContent = absent;
       document.getElementById("sumLeave").textContent = leaveOrAct;
+
+      const camBadge = document.getElementById("camPresentBadge");
+      if (camBadge) {
+        camBadge.textContent = `มา: ${present} / ${studentsData.length}`;
+      }
     }
 
     async function submitManualCheck(syncToWeb) {
+      ensureAudioUnlocked();
+      unlockSpeech();
+
       const saveBtn = document.getElementById("saveSheetBtn");
       const syncBtn = document.getElementById("saveAndSyncBtn");
       saveBtn.disabled = true;
@@ -617,6 +1034,7 @@
 
         if (res && res.status === "success") {
           showAlert("✅ " + res.message, "success");
+          speakThai("บันทึกสำเร็จเรียบร้อย");
           loadTodayData();
         } else {
           showAlert("❌ " + (res ? res.message : "บันทึกไม่สำเร็จ"), "error");
